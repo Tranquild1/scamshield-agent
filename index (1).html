@@ -358,6 +358,8 @@ footer a { color: var(--accent); text-decoration: none; }
 <script>
 // ── CONFIG ──────────────────────────────────────────────
 const GROQ_KEY = 'PASTE_YOUR_GROQ_KEY_HERE';
+const OKX_API_KEY = 'PASTE_YOUR_OKX_API_KEY_HERE';
+const OKX_BASE = 'https://web3.okx.com/api/v5/dex';
 
 const XLAYER_TESTNET = {
   chainId: '0x7A0',  // 1952 - official OKX testnet
@@ -459,6 +461,67 @@ function handleImage(event) {
 }
 
 // ── ANALYZE ──────────────────────────────────────────────
+// ── OKX ONCHAIN OS MARKET API ────────────────────────────
+async function lookupTokenOnchain(text) {
+  // Extract crypto addresses or token symbols from text
+  const addressMatch = text.match(/0x[a-fA-F0-9]{40}/);
+  const tokenMatch = text.match(/\$([A-Z]{2,10})/);
+  if (!addressMatch && !tokenMatch) return null;
+
+  try {
+    let url;
+    if (addressMatch) {
+      url = `${OKX_BASE}/market/token-price?chainIndex=196&tokenContractAddress=${addressMatch[0]}`;
+    } else {
+      url = `${OKX_BASE}/market/token-price?chainIndex=196&tokenSymbol=${tokenMatch[1]}`;
+    }
+    const res = await fetch(url, {
+      headers: { 'OK-ACCESS-KEY': OKX_API_KEY, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data?.data?.length > 0) {
+      return { token: tokenMatch?.[1] || addressMatch[0].slice(0,10)+'...', data: data.data[0] };
+    }
+  } catch(e) { console.log('OKX API:', e.message); }
+  return null;
+}
+
+async function checkWalletOnchain(text) {
+  const addressMatch = text.match(/0x[a-fA-F0-9]{40}/);
+  if (!addressMatch) return null;
+  try {
+    const url = `${OKX_BASE}/market/address-activity?chainIndex=196&address=${addressMatch[0]}`;
+    const res = await fetch(url, {
+      headers: { 'OK-ACCESS-KEY': OKX_API_KEY, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    return data?.data || null;
+  } catch(e) { return null; }
+}
+
+function renderOKXData(tokenData, walletData) {
+  if (!tokenData && !walletData) return '';
+  let html = `<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;margin-bottom:10px;">⚡ ONCHAIN OS MARKET DATA — POWERED BY OKX</div>`;
+  if (tokenData) {
+    const price = parseFloat(tokenData.data.price || 0).toFixed(6);
+    const change = parseFloat(tokenData.data.priceChange24h || 0).toFixed(2);
+    const changeColor = change >= 0 ? '#00e676' : '#ff3d71';
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:13px;font-weight:600;">$${tokenData.token}</span>
+      <span style="font-family:var(--font-mono);font-size:12px;">$${price} <span style="color:${changeColor};">${change >= 0 ? '+' : ''}${change}%</span></span>
+    </div>`;
+  }
+  if (walletData) {
+    html += `<div style="font-size:12px;color:var(--muted);margin-top:6px;">Wallet activity found on X Layer — treat with caution if unsolicited.</div>`;
+  }
+  if (!tokenData && !walletData) {
+    html += `<div style="font-size:12px;color:var(--muted);">No matching token or wallet found on X Layer.</div>`;
+  }
+  html += `<div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:var(--font-mono);">Data via OKX Onchain OS Market API</div></div>`;
+  return html;
+}
+
 const loadingMessages = ['Scanning for red flags…','Checking urgency patterns…','Analyzing sender signals…','Looking for payment traps…','Reviewing language tactics…'];
 
 async function analyze() {
@@ -523,7 +586,21 @@ score 0-30=Safe, 31-69=Suspicious, 70-100=Scam. Message type: ${selectedType}`;
     const raw = data?.choices?.[0]?.message?.content || '';
     const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
     lastResult = { ...result, messageText: text || '[screenshot]', messageType: selectedType };
-    renderResult(result);
+
+    // Fetch OKX Onchain OS market data if crypto-related
+    let okxHtml = '';
+    if (result.level !== 'Safe' || selectedType === 'Crypto message') {
+      const [tokenData, walletData] = await Promise.allSettled([
+        lookupTokenOnchain(text || ''),
+        checkWalletOnchain(text || '')
+      ]);
+      okxHtml = renderOKXData(
+        tokenData.status === 'fulfilled' ? tokenData.value : null,
+        walletData.status === 'fulfilled' ? walletData.value : null
+      );
+    }
+
+    renderResult(result, okxHtml);
     renderReportSection(result);
   } catch(e) {
     clearInterval(loadInterval);
@@ -537,7 +614,7 @@ score 0-30=Safe, 31-69=Suspicious, 70-100=Scam. Message type: ${selectedType}`;
 }
 
 // ── RENDER RESULT ────────────────────────────────────────
-function renderResult(r) {
+function renderResult(r, okxHtml = '') {
   const score = Math.round(r.score);
   const level = r.level;
   let color, pillStyle, adviceStyle, trackColor;
@@ -588,7 +665,7 @@ function renderResult(r) {
         <div class="progress-track"><div class="progress-fill" style="width:${score}%;background:${trackColor};"></div></div>
       </div>
       <div class="flags-section">${flagsHtml}${posHtml}</div>
-      <div class="advice-box" style="${adviceStyle}"><strong>What to do:</strong> ${r.advice}</div>
+      ${okxHtml}      <div class="advice-box" style="${adviceStyle}"><strong>What to do:</strong> ${r.advice}</div>
     </div>`;
 
   const sec = document.getElementById('resultSection');
