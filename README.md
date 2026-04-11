@@ -10,6 +10,8 @@
 
 ## 📖 Project Introduction
 
+**Agentic Wallet:** `0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b` (X Layer Testnet)
+
 ScamShield Agent is an AI-powered scam detection tool that helps everyday users identify fake job offers, phishing emails, crypto scams, WhatsApp messages, Telegram messages, and suspicious DMs — instantly.
 
 What makes it unique in the Web3 space: **confirmed scams are reported permanently on the X Layer blockchain**, building a decentralized, tamper-proof public scam database that anyone can access and verify. No central authority controls it. No report can be deleted or faked.
@@ -68,13 +70,19 @@ Both calls use the **OKX Onchain OS Market module** with `chainIndex=196` (X Lay
 
 ## 📍 Deployment Address
 
-ScamShield Agent reports scams as **onchain transactions on X Layer Testnet** (Chain ID: 1952).
+ScamShield Agent operates on **X Layer Testnet** (Chain ID: 1952) with a dedicated Agentic Wallet as its onchain identity.
 
-Each report is a self-transaction from the reporter's wallet with the scam data encoded in the transaction calldata — permanently recorded on the blockchain.
+### Agentic Wallet (ScamShield Agent Identity)
+```
+0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b
+```
+🔗 [View on X Layer Testnet Explorer](https://web3.okx.com/explorer/x-layer-test/address/0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b)
 
 - **Network:** X Layer Testnet
+- **Chain ID:** 1952
+- **RPC:** https://testrpc.xlayer.tech/terigon
 - **Explorer:** https://web3.okx.com/explorer/x-layer-test
-- **Reporting mechanism:** Wallet transaction with encoded calldata
+- **Reporting mechanism:** Onchain transactions with scam data encoded in calldata
 - **Mainnet switch:** Change `ACTIVE_NETWORK` constant to `XLAYER_MAINNET` for production
 
 ---
