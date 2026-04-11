@@ -262,38 +262,6 @@ footer a { color: var(--accent); text-decoration: none; }
 </style>
 </head>
 <body>
-<script>
-function toggleSetup() {
-  var fields = document.getElementById('setupFields');
-  var arrow = document.getElementById('setupArrow');
-  if (!fields) return;
-  var isHidden = fields.style.display === 'none' || fields.style.display === '';
-  fields.style.display = isHidden ? 'block' : 'none';
-  arrow.textContent = isHidden ? '▲' : '▼';
-  if (isHidden) {
-    document.getElementById('groqKeyInput').value = sessionStorage.getItem('ss_groq') || '';
-    document.getElementById('okxKeyInput').value = sessionStorage.getItem('ss_okx') || '';
-    document.getElementById('okxSecretInput').value = sessionStorage.getItem('ss_okx_secret') || '';
-    document.getElementById('okxPassInput').value = sessionStorage.getItem('ss_okx_pass') || '';
-  }
-}
-function saveKeys() {
-  var groq = document.getElementById('groqKeyInput').value.trim();
-  var okx = document.getElementById('okxKeyInput').value.trim();
-  var secret = document.getElementById('okxSecretInput').value.trim();
-  var pass = document.getElementById('okxPassInput').value.trim();
-  if (!groq) { alert('Please enter your Groq API key at minimum.'); return; }
-  sessionStorage.setItem('ss_groq', groq);
-  if (okx) sessionStorage.setItem('ss_okx', okx);
-  if (secret) sessionStorage.setItem('ss_okx_secret', secret);
-  if (pass) sessionStorage.setItem('ss_okx_pass', pass);
-  document.getElementById('setupFields').style.display = 'none';
-  document.getElementById('setupArrow').textContent = '▼';
-  document.getElementById('setupPanel').style.background = 'rgba(0,230,118,0.04)';
-  document.getElementById('setupPanel').style.borderBottomColor = 'rgba(0,230,118,0.15)';
-  alert('Keys saved! You can now analyze messages.');
-}
-</script>
 <div class="bg-grid"></div>
 <div class="bg-orb bg-orb-1"></div>
 <div class="bg-orb bg-orb-2"></div>
@@ -311,35 +279,31 @@ function saveKeys() {
   </div>
 </nav>
 
-<div id="setupPanel" style="background:rgba(0,212,255,0.04);border-bottom:1px solid rgba(0,212,255,0.1);padding:12px 20px;display:block;">
+<div id="setupPanel" style="background:rgba(0,212,255,0.04);border-bottom:1px solid rgba(0,212,255,0.1);padding:12px 20px;">
   <div style="max-width:760px;margin:0 auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleSetup()">
-      <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:0.06em;">⚙ DEVELOPER SETUP — Click to expand</div>
-      <div id="setupArrow" style="font-size:12px;color:var(--muted);">▼</div>
-    </div>
+    <button id="setupToggleBtn" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:transparent;border:none;cursor:pointer;padding:0;" type="button">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:0.06em;">⚙ DEVELOPER SETUP — Tap to expand</span>
+      <span id="setupArrow" style="font-size:12px;color:var(--muted);">▼</span>
+    </button>
     <div id="setupFields" style="display:none;margin-top:14px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">GROQ API KEY</div>
-          <input type="password" id="groqKeyInput" placeholder="gsk_..." style="width:100%;font-size:12px;padding:8px 10px;" />
-        </div>
-        <div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX API KEY</div>
-          <input type="password" id="okxKeyInput" placeholder="OK_API_KEY..." style="width:100%;font-size:12px;padding:8px 10px;" />
-        </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">GROQ API KEY</div>
+        <input type="password" id="groqKeyInput" placeholder="gsk_..." style="width:100%;font-size:12px;padding:8px 10px;" />
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-        <div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX SECRET KEY</div>
-          <input type="password" id="okxSecretInput" placeholder="OK_SECRET_KEY..." style="width:100%;font-size:12px;padding:8px 10px;" />
-        </div>
-        <div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX PASSPHRASE</div>
-          <input type="password" id="okxPassInput" placeholder="OKX_PASSPHRASE..." style="width:100%;font-size:12px;padding:8px 10px;" />
-        </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX API KEY</div>
+        <input type="password" id="okxKeyInput" placeholder="OK_API_KEY..." style="width:100%;font-size:12px;padding:8px 10px;" />
       </div>
-      <button onclick="saveKeys()" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:white;font-weight:700;font-size:13px;cursor:pointer;">Save Keys & Start</button>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--font-mono);">Keys are stored in your browser only. Never sent anywhere except the respective APIs.</div>
+      <div style="margin-bottom:10px;">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX SECRET KEY</div>
+        <input type="password" id="okxSecretInput" placeholder="OK_SECRET_KEY..." style="width:100%;font-size:12px;padding:8px 10px;" />
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">OKX PASSPHRASE</div>
+        <input type="password" id="okxPassInput" placeholder="OKX_PASSPHRASE..." style="width:100%;font-size:12px;padding:8px 10px;" />
+      </div>
+      <button id="saveKeysBtn" style="width:100%;padding:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:white;font-weight:700;font-size:13px;cursor:pointer;" type="button">Save Keys & Start</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;font-family:var(--font-mono);">Keys stored in your browser only. Never shared.</div>
     </div>
   </div>
 </div>
@@ -912,6 +876,38 @@ if (window.ethereum?.selectedAddress) {
   updateWalletUI();
 }
 window.ethereum?.on('accountsChanged', (accounts) => { walletAddress = accounts[0] || null; updateWalletUI(); });
+
+// Setup panel event listeners
+document.getElementById('setupToggleBtn').addEventListener('click', function() {
+  var fields = document.getElementById('setupFields');
+  var arrow = document.getElementById('setupArrow');
+  var isHidden = fields.style.display === 'none' || fields.style.display === '';
+  fields.style.display = isHidden ? 'block' : 'none';
+  arrow.textContent = isHidden ? '▲' : '▼';
+  if (isHidden) {
+    document.getElementById('groqKeyInput').value = sessionStorage.getItem('ss_groq') || '';
+    document.getElementById('okxKeyInput').value = sessionStorage.getItem('ss_okx') || '';
+    document.getElementById('okxSecretInput').value = sessionStorage.getItem('ss_okx_secret') || '';
+    document.getElementById('okxPassInput').value = sessionStorage.getItem('ss_okx_pass') || '';
+  }
+});
+
+document.getElementById('saveKeysBtn').addEventListener('click', function() {
+  var groq = document.getElementById('groqKeyInput').value.trim();
+  var okx = document.getElementById('okxKeyInput').value.trim();
+  var secret = document.getElementById('okxSecretInput').value.trim();
+  var pass = document.getElementById('okxPassInput').value.trim();
+  if (!groq) { alert('Please enter your Groq API key at minimum.'); return; }
+  sessionStorage.setItem('ss_groq', groq);
+  if (okx) sessionStorage.setItem('ss_okx', okx);
+  if (secret) sessionStorage.setItem('ss_okx_secret', secret);
+  if (pass) sessionStorage.setItem('ss_okx_pass', pass);
+  document.getElementById('setupFields').style.display = 'none';
+  document.getElementById('setupArrow').textContent = '▼';
+  document.getElementById('setupPanel').style.background = 'rgba(0,230,118,0.04)';
+  document.getElementById('setupPanel').style.borderBottomColor = 'rgba(0,230,118,0.15)';
+  alert('Keys saved! You can now analyze messages.');
+});
 </script>
 </body>
 </html>
