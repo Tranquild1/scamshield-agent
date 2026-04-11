@@ -285,7 +285,7 @@ footer a { color: var(--accent); text-decoration: none; }
       <div style="font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:0.06em;">⚙ DEVELOPER SETUP — Click to expand</div>
       <div id="setupArrow" style="font-size:12px;color:var(--muted);">▼</div>
     </div>
-    <div id="setupFields" style="display:none;margin-top:14px;display:none;">
+    <div id="setupFields" style="display:none;margin-top:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
           <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-bottom:5px;">GROQ API KEY</div>
@@ -399,11 +399,11 @@ function getOkxPass() { return sessionStorage.getItem('ss_okx_pass') || ''; }
 function toggleSetup() {
   const fields = document.getElementById('setupFields');
   const arrow = document.getElementById('setupArrow');
+  if (!fields) return;
   const isHidden = fields.style.display === 'none' || fields.style.display === '';
   fields.style.display = isHidden ? 'block' : 'none';
   arrow.textContent = isHidden ? '▲' : '▼';
   if (isHidden) {
-    // Pre-fill if already saved
     document.getElementById('groqKeyInput').value = sessionStorage.getItem('ss_groq') || '';
     document.getElementById('okxKeyInput').value = sessionStorage.getItem('ss_okx') || '';
     document.getElementById('okxSecretInput').value = sessionStorage.getItem('ss_okx_secret') || '';
@@ -425,7 +425,6 @@ function saveKeys() {
   document.getElementById('setupArrow').textContent = '▼';
   document.getElementById('setupPanel').style.background = 'rgba(0,230,118,0.04)';
   document.getElementById('setupPanel').style.borderBottomColor = 'rgba(0,230,118,0.15)';
-  document.querySelector('#setupPanel .font-mono, #setupPanel div div').style.color = 'var(--safe)';
   alert('✅ Keys saved! You can now analyze messages.');
 }
 
