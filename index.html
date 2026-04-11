@@ -392,36 +392,10 @@ function getOkxKey() { return sessionStorage.getItem('ss_okx') || ''; }
 function getOkxSecret() { return sessionStorage.getItem('ss_okx_secret') || ''; }
 function getOkxPass() { return sessionStorage.getItem('ss_okx_pass') || ''; }
 
-function toggleSetup() {
-  const fields = document.getElementById('setupFields');
-  const arrow = document.getElementById('setupArrow');
-  if (!fields) return;
-  const isHidden = fields.style.display === 'none' || fields.style.display === '';
-  fields.style.display = isHidden ? 'block' : 'none';
-  arrow.textContent = isHidden ? '▲' : '▼';
-  if (isHidden) {
-    document.getElementById('groqKeyInput').value = sessionStorage.getItem('ss_groq') || '';
-    document.getElementById('okxKeyInput').value = sessionStorage.getItem('ss_okx') || '';
-    document.getElementById('okxSecretInput').value = sessionStorage.getItem('ss_okx_secret') || '';
-    document.getElementById('okxPassInput').value = sessionStorage.getItem('ss_okx_pass') || '';
-  }
-}
+// toggleSetup moved to event listener
 
-function saveKeys() {
-  const groq = document.getElementById('groqKeyInput').value.trim();
-  const okx = document.getElementById('okxKeyInput').value.trim();
-  const secret = document.getElementById('okxSecretInput').value.trim();
-  const pass = document.getElementById('okxPassInput').value.trim();
-  if (!groq) { alert('Please enter your Groq API key at minimum.'); return; }
-  sessionStorage.setItem('ss_groq', groq);
-  if (okx) sessionStorage.setItem('ss_okx', okx);
-  if (secret) sessionStorage.setItem('ss_okx_secret', secret);
-  if (pass) sessionStorage.setItem('ss_okx_pass', pass);
-  document.getElementById('setupFields').style.display = 'none';
-  document.getElementById('setupArrow').textContent = '▼';
-  document.getElementById('setupPanel').style.background = 'rgba(0,230,118,0.04)';
-  document.getElementById('setupPanel').style.borderBottomColor = 'rgba(0,230,118,0.15)';
-  alert('✅ Keys saved! You can now analyze messages.');
+// saveKeys moved to event listener
+function saveKeys_unused() {
 }
 
 const XLAYER_TESTNET = {
@@ -590,7 +564,7 @@ const loadingMessages = ['Scanning for red flags…','Checking urgency patterns�
 async function analyze() {
   if (!getGroqKey()) {
     alert('Please set up your API keys first. Tap the "DEVELOPER SETUP" bar at the top.');
-    toggleSetup();
+    document.getElementById('setupToggleBtn').click();
     return;
   }
   const text = document.getElementById('msgInput').value.trim();
