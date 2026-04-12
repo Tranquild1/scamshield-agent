@@ -274,7 +274,7 @@ footer a { color: var(--accent); text-decoration: none; }
     <div class="nav-logo-text">Scam<span>Shield</span> Agent</div>
   </div>
   <div class="nav-right">
-    <div class="chain-badge"><div class="chain-dot"></div><span id="chainName">X Layer Testnet</span></div>
+    <div class="chain-badge"><div class="chain-dot"></div><span id="chainName">X Layer</span></div>
     <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
   </div>
 </nav>
@@ -424,8 +424,8 @@ const XLAYER_MAINNET = {
   blockExplorerUrls: ['https://web3.okx.com/explorer/x-layer']
 };
 
-// Use testnet for now — switch to XLAYER_MAINNET for submission
-const ACTIVE_NETWORK = XLAYER_TESTNET;
+// Mainnet for submission
+const ACTIVE_NETWORK = XLAYER_MAINNET;
 const EXPLORER = ACTIVE_NETWORK.blockExplorerUrls[0];
 
 // ── STATE ────────────────────────────────────────────────
