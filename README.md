@@ -70,20 +70,20 @@ Both calls use the **OKX Onchain OS Market module** with `chainIndex=196` (X Lay
 
 ## 📍 Deployment Address
 
-ScamShield Agent operates on **X Layer Testnet** (Chain ID: 1952) with a dedicated Agentic Wallet as its onchain identity.
+ScamShield Agent is deployed on **X Layer Mainnet** (Chain ID: 196) with a dedicated Agentic Wallet as its onchain identity.
 
 ### Agentic Wallet (ScamShield Agent Identity)
 ```
 0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b
 ```
-🔗 [View on X Layer Testnet Explorer](https://web3.okx.com/explorer/x-layer-test/address/0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b)
+🔗 [View on X Layer Mainnet Explorer](https://web3.okx.com/explorer/x-layer/address/0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b)
 
-- **Network:** X Layer Testnet
-- **Chain ID:** 1952
-- **RPC:** https://testrpc.xlayer.tech/terigon
-- **Explorer:** https://web3.okx.com/explorer/x-layer-test
+- **Network:** X Layer Mainnet
+- **Chain ID:** 196
+- **RPC:** https://rpc.xlayer.tech
+- **Explorer:** https://web3.okx.com/explorer/x-layer
+- **Gas token:** OKB
 - **Reporting mechanism:** Onchain transactions with scam data encoded in calldata
-- **Mainnet switch:** Change `ACTIVE_NETWORK` constant to `XLAYER_MAINNET` for production
 
 ---
 
