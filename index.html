@@ -512,30 +512,15 @@ function handleImage(event) {
 }
 
 // ── ANALYZE ──────────────────────────────────────────────
-// ── OKX WALLET BALANCE CHECK (public endpoint, no signing) ──
-async function checkWalletBalance(address) {
-  try {
-    const url = `https://web3.okx.com/api/v5/wallet/asset/total-value-by-address?address=${address}&chains=196&assetType=0`;
-    const res = await fetch(url, {
-      headers: { 'OK-ACCESS-KEY': getOkxKey() }
-    });
-    const data = await res.json();
-    if (data?.data?.[0]?.totalValue) {
-      return parseFloat(data.data[0].totalValue).toFixed(2);
-    }
-  } catch(e) { console.log('Balance check:', e.message); }
-  return null;
-}
-
+// ── OKX WALLET EXPLORER LINK ──
 function renderWalletData(address, balance) {
-  if (!balance) return '';
   return `<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
-    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;margin-bottom:8px;">⚡ ONCHAIN OS — WALLET DATA VIA OKX</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">${address.slice(0,8)}...${address.slice(-6)}</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);">$${balance} USD</div>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;margin-bottom:8px;">⚡ ONCHAIN OS — WALLET DETECTED ON X LAYER</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">${address.slice(0,10)}...${address.slice(-6)}</div>
+      <a href="https://web3.okx.com/explorer/x-layer/address/${address}" target="_blank" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);text-decoration:none;background:rgba(0,212,255,0.1);padding:4px 10px;border-radius:6px;">View on X Layer ↗</a>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--font-mono);">Total wallet value on X Layer via OKX Onchain OS</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--font-mono);">Wallet address found in this message. Verify onchain before sending any funds.</div>
   </div>`;
 }
 
@@ -683,10 +668,9 @@ score 0-30=Safe, 31-69=Suspicious, 70-100=Scam. Message type: ${selectedType}`;
         tokenData.status === 'fulfilled' ? tokenData.value : null,
         walletData.status === 'fulfilled' ? walletData.value : null
       );
-      // Also check wallet balance if address found
-      if (addressMatch && getOkxKey()) {
-        const balance = await checkWalletBalance(addressMatch[0]);
-        okxHtml = renderWalletData(addressMatch[0], balance) + okxHtml;
+      // Show wallet explorer link if address found
+      if (addressMatch) {
+        okxHtml = renderWalletData(addressMatch[0], null) + okxHtml;
       }
     }
 
@@ -859,18 +843,42 @@ async function reportOnchain() {
 }
 
 // ── DASHBOARD ────────────────────────────────────────────
-function updateScamCounter() {
-  const saved = localStorage.getItem('scamshield_reports');
-  const reports = saved ? JSON.parse(saved) : [];
-  const scams = reports.filter(r => r.level === 'Scam').length;
-  const total = reports.length;
+async function updateScamCounter() {
   const el = document.getElementById('scamCounter');
-  if (el) {
-    if (total === 0) {
-      el.textContent = 'Be the first to report a scam onchain';
-    } else {
-      el.textContent = `${scams} scam${scams !== 1 ? 's' : ''} reported onchain and counting`;
+  if (!el) return;
+
+  // Get local reports first for instant display
+  const saved = localStorage.getItem('scamshield_reports');
+  const localReports = saved ? JSON.parse(saved) : [];
+  const localScams = localReports.filter(r => r.level === 'Scam').length;
+
+  // Show local count immediately
+  if (localScams > 0) {
+    el.textContent = `${localScams} scam${localScams !== 1 ? 's' : ''} reported onchain and counting`;
+  }
+
+  // Then fetch real count from X Layer blockchain via RPC
+  try {
+    const agentWallet = '0xecb8bb95b8303ae1a9eeb402bb4b0e6e3d005a5b';
+    const res = await fetch('https://rpc.xlayer.tech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0', method: 'eth_getTransactionCount',
+        params: [agentWallet, 'latest'], id: 1
+      })
+    });
+    const data = await res.json();
+    if (data?.result) {
+      const txCount = parseInt(data.result, 16);
+      if (txCount > 0) {
+        el.textContent = `${txCount} scam${txCount !== 1 ? 's' : ''} reported onchain and counting`;
+      } else if (localScams === 0) {
+        el.textContent = 'Be the first to report a scam onchain';
+      }
     }
+  } catch(e) {
+    console.log('Counter RPC:', e.message);
   }
 }
 
