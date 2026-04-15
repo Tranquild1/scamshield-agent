@@ -137,11 +137,13 @@ ScamShield Agent positions itself as **X Layer's trust layer** — a public util
 ## 🚀 How to Run Locally
 
 1. Clone this repo
-2. Open `index.html` in any browser
-3. Add your Groq API key and OKX Onchain OS API key in the config section
-4. Connect your OKX Wallet
-5. Get test OKB from https://web3.okx.com/xlayer/faucet
+2. Open `index.html` in any browser (or serve via a local server / GitHub Pages)
+3. Tap **"SETUP REQUIRED"** at the top and enter your Groq API key and OKX Onchain OS API credentials
+4. Connect your OKX Wallet or MetaMask — the app will automatically switch to **X Layer Mainnet** (Chain ID: 196)
+5. Ensure your wallet holds a small amount of **OKB** (mainnet) to cover gas fees for onchain reports
 6. Start analyzing and reporting scams!
+
+> **Note:** ScamShield Agent runs on **X Layer Mainnet** — real OKB is required for gas, not testnet tokens.
 
 ---
 

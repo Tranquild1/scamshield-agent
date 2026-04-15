@@ -400,7 +400,6 @@ footer a { color: var(--accent); text-decoration: none; }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────
-const OKX_BASE = 'https://web3.okx.com/api/v5/dex';
 function getGroqKey() { return sessionStorage.getItem('ss_groq') || ''; }
 function getOkxKey() { return sessionStorage.getItem('ss_okx') || ''; }
 function getOkxSecret() { return sessionStorage.getItem('ss_okx_secret') || ''; }
@@ -525,63 +524,114 @@ function renderWalletData(address, balance) {
 }
 
 // ── OKX ONCHAIN OS MARKET API ────────────────────────────
+
+// Build HMAC-SHA256 signature required by OKX API
+async function okxSign(timestamp, method, path, secret) {
+  const msg = timestamp + method + path;
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+
+async function okxFetch(endpoint) {
+  const key = getOkxKey();
+  const secret = getOkxSecret();
+  const pass = getOkxPass();
+  if (!key || !secret || !pass) return null;
+
+  const timestamp = new Date().toISOString();
+  const path = '/api/v5/dex' + endpoint;
+  const signature = await okxSign(timestamp, 'GET', path, secret);
+
+  const res = await fetch('https://web3.okx.com' + path, {
+    headers: {
+      'OK-ACCESS-KEY': key,
+      'OK-ACCESS-SIGN': signature,
+      'OK-ACCESS-TIMESTAMP': timestamp,
+      'OK-ACCESS-PASSPHRASE': pass,
+      'Content-Type': 'application/json'
+    }
+  });
+  return res.json();
+}
+
 async function lookupTokenOnchain(text) {
-  // Extract crypto addresses or token symbols from text
   const addressMatch = text.match(/0x[a-fA-F0-9]{40}/);
-  const tokenMatch = text.match(/\$([A-Z]{2,10})/);
+  const tokenMatch = text.match(/\$([A-Za-z]{2,10})/);
   if (!addressMatch && !tokenMatch) return null;
 
   try {
-    let url;
+    let endpoint;
     if (addressMatch) {
-      url = `${OKX_BASE}/market/token-price?chainIndex=196&tokenContractAddress=${addressMatch[0]}`;
+      endpoint = `/market/token-price?chainIndex=196&tokenContractAddress=${addressMatch[0]}`;
     } else {
-      url = `${OKX_BASE}/market/token-price?chainIndex=196&tokenSymbol=${tokenMatch[1]}`;
+      endpoint = `/market/token-price?chainIndex=196&tokenSymbol=${tokenMatch[1].toUpperCase()}`;
     }
-    const res = await fetch(url, {
-      headers: { 'OK-ACCESS-KEY': getOkxKey(), 'OK-SECRET-KEY': getOkxSecret(), 'OK-ACCESS-PASSPHRASE': getOkxPass(), 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
+    const data = await okxFetch(endpoint);
     if (data?.data?.length > 0) {
-      return { token: tokenMatch?.[1] || addressMatch[0].slice(0,10)+'...', data: data.data[0] };
+      return {
+        token: tokenMatch?.[1]?.toUpperCase() || addressMatch[0].slice(0,10)+'...',
+        found: true,
+        info: data.data[0]
+      };
     }
-  } catch(e) { console.log('OKX API:', e.message); }
-  return null;
+    // Token not found on X Layer — this itself is a red flag
+    return {
+      token: tokenMatch?.[1]?.toUpperCase() || addressMatch[0].slice(0,10)+'...',
+      found: false,
+      info: null
+    };
+  } catch(e) {
+    console.log('OKX token lookup:', e.message);
+    return null;
+  }
 }
 
 async function checkWalletOnchain(text) {
   const addressMatch = text.match(/0x[a-fA-F0-9]{40}/);
   if (!addressMatch) return null;
   try {
-    const url = `${OKX_BASE}/market/address-activity?chainIndex=196&address=${addressMatch[0]}`;
-    const res = await fetch(url, {
-      headers: { 'OK-ACCESS-KEY': getOkxKey(), 'OK-SECRET-KEY': getOkxSecret(), 'OK-ACCESS-PASSPHRASE': getOkxPass(), 'Content-Type': 'application/json' }
-    });
-    const data = await res.json();
+    const data = await okxFetch(`/market/address-activity?chainIndex=196&address=${addressMatch[0]}`);
     return data?.data || null;
   } catch(e) { return null; }
 }
 
 function renderOKXData(tokenData, walletData) {
   if (!tokenData && !walletData) return '';
+
   let html = `<div style="background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);border-radius:12px;padding:14px 16px;margin-bottom:12px;">
-    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;margin-bottom:10px;">⚡ ONCHAIN OS MARKET DATA — POWERED BY OKX</div>`;
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:0.06em;margin-bottom:10px;">⚡ ONCHAIN OS MARKET DATA — X LAYER (CHAIN 196)</div>`;
+
   if (tokenData) {
-    const price = parseFloat(tokenData.data.price || 0).toFixed(6);
-    const change = parseFloat(tokenData.data.priceChange24h || 0).toFixed(2);
-    const changeColor = change >= 0 ? '#00e676' : '#ff3d71';
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <span style="font-size:13px;font-weight:600;">$${tokenData.token}</span>
-      <span style="font-family:var(--font-mono);font-size:12px;">$${price} <span style="color:${changeColor};">${change >= 0 ? '+' : ''}${change}%</span></span>
+    if (tokenData.found && tokenData.info) {
+      const price = parseFloat(tokenData.info.price || 0);
+      const priceStr = price < 0.000001 ? price.toExponential(4) : price.toFixed(price < 0.01 ? 6 : 4);
+      const change = parseFloat(tokenData.info.priceChange24h || 0).toFixed(2);
+      const changeColor = parseFloat(change) >= 0 ? '#00e676' : '#ff3d71';
+      const changePrefix = parseFloat(change) >= 0 ? '+' : '';
+      html += `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:14px;font-weight:700;color:var(--text);">$${tokenData.token}</span>
+          <span style="font-family:var(--font-mono);font-size:13px;font-weight:600;">$${priceStr} <span style="color:${changeColor};">${changePrefix}${change}%</span></span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">✅ Token verified on X Layer mainnet</div>`;
+    } else {
+      html += `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:14px;font-weight:700;color:#ff3d71;">$${tokenData.token}</span>
+          <span style="font-family:var(--font-mono);font-size:10px;background:rgba(255,61,113,0.12);color:#ff3d71;padding:2px 8px;border-radius:20px;">NOT FOUND ON X LAYER</span>
+        </div>
+        <div style="font-size:11px;color:#ffab00;font-family:var(--font-mono);">⚠️ This token does not exist on X Layer mainnet — possible fake or scam token.</div>`;
+    }
+  }
+
+  if (walletData) {
+    html += `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid rgba(99,179,255,0.08);">
+      Wallet activity detected on X Layer. Verify before sending any funds.
     </div>`;
   }
-  if (walletData) {
-    html += `<div style="font-size:12px;color:var(--muted);margin-top:6px;">Wallet activity found on X Layer — treat with caution if unsolicited.</div>`;
-  }
-  if (!tokenData && !walletData) {
-    html += `<div style="font-size:12px;color:var(--muted);">No matching token or wallet found on X Layer.</div>`;
-  }
-  html += `<div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:var(--font-mono);">Data via OKX Onchain OS Market API</div></div>`;
+
+  html += `<div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:var(--font-mono);opacity:0.7;">Source: OKX Onchain OS Market API</div></div>`;
   return html;
 }
 
